@@ -25,3 +25,8 @@ class UserAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(Setting)
+class SettingsModelAdmin(admin.ModelAdmin):
+    pass

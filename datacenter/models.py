@@ -58,3 +58,12 @@ class Order(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user}_{self.account.file.name}_{self.status}'
+
+# Settings
+
+class Setting(models.Model):
+    time_to_check = models.IntegerField('Время проверки аккаунта в минутах')
+    _singleton = models.BooleanField(default=True, editable=False, unique=True)
+
+    def __str__(self) -> str:
+        return 'Время для пользователя на проверку аккаунта'

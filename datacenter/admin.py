@@ -9,7 +9,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    pass
+    list_filter=['source']
 
 
 @admin.register(User)
@@ -18,7 +18,7 @@ class UserAdmin(admin.ModelAdmin):
 
 
 @admin.register(Account)
-class UserAdmin(admin.ModelAdmin):
+class AccountAdmin(admin.ModelAdmin):
     pass
 
 
@@ -29,4 +29,8 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Setting)
 class SettingsModelAdmin(admin.ModelAdmin):
+    pass
+
+@admin.register(Source)
+class SourceAdmin(admin.ModelAdmin):
     pass

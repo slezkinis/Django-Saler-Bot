@@ -8,11 +8,18 @@ class Category(models.Model):
     def __str__(self) -> str:
         return self.name_ru
 
-    
+
+class Source(models.Model):
+    name = models.CharField('Название', max_length=100)
+
+    def __str__(self) -> str:
+        return self.name
+
+     
 class Product(models.Model):
     name_ru = models.CharField('Название на русском', max_length=100)
     name_en = models.CharField('Название на английском', max_length=100)
-    source = models.CharField('Источник', max_length=100, blank=True, null=True)
+    source = models.ForeignKey(Source, models.CASCADE, related_name='products', verbose_name='Источник', null=True)
     description_ru = models.TextField('Описание на русском')
     description_en = models.TextField('Описание на английском')
     price = models.FloatField('Цена в $')

@@ -12,9 +12,11 @@ class Category(models.Model):
 class Product(models.Model):
     name_ru = models.CharField('Название на русском', max_length=100)
     name_en = models.CharField('Название на английском', max_length=100)
+    source = models.CharField('Источник', max_length=100, blank=True, null=True)
     description_ru = models.TextField('Описание на русском')
     description_en = models.TextField('Описание на английском')
     price = models.FloatField('Цена в $')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='К какой категории привязан')
 
     def __str__(self) -> str:
         return self.name_ru
@@ -28,6 +30,7 @@ class User(models.Model):
     tg_id = models.IntegerField('TG id')
     username = models.CharField('Имя пользователя', max_length=100, blank=True, null=True)
     selected_language = models.CharField('Язык', choices=LANGUAGES, default='ru', max_length=100)
+    money = models.DecimalField(verbose_name='Кол-во $', max_digits=5, decimal_places=2, default=0)
     
     def __str__(self) -> str:
         if self.username:

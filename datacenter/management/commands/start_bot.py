@@ -450,4 +450,31 @@ Password: {account_data[1]}
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton('🚫 Сlose', callback_data='close'))
             bot.edit_message_text("Purchase cancelled!", message.message.chat.id, message.message.message_id, reply_markup=markup)
+    
+    @bot.message_handler(content_types=['text'], func=lambda m: m.text == '📱 Профиль' or m.text == '📱 Profile')
+    def profile(message):
+        try:
+            user = User.objects.get(tg_id=message.chat.id)
+        except:
+            start(message)
+            return
+        if user.selected_language == 'ru':
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('💸 Пополнить баланс', callback_data='add_balance'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🛍️ Мои покупки', callback_data='orders'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+            text = f'🙍‍♂ Пользователь: {message.chat.first_name}\n🆔 ID: {message.chat.id}\n💲 Баланс: {user.money} $ \n------------------\n🛒 Количество покупок: {user.orders.count()} шт.'
+            bot.send_message(message.chat.id, text, reply_markup=markup)
+        else:
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('💸 Top up balance', callback_data='add_balance'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🛍️ My purchases', callback_data='orders'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
+            text = f'🙍‍♂ Username: {message.chat.first_name}\n🆔 ID: {message.chat.id}\n💲 Balance: {user.money} $ \n------------------\n🛒 Number of purchases: {user.orders.count()} шт.'
+            bot.send_message(message.chat.id, text, reply_markup=markup)
+     
     bot.infinity_polling(skip_pending = True)

@@ -1,6 +1,9 @@
 from django.core.management.base import BaseCommand
-from project.settings import TG_TOKEN
+from project.settings import TG_TOKEN, ADMIN_TG_ID
 from datacenter.models import *
+import datetime
+from django.utils import timezone
+
 
 
 class Command(BaseCommand):
@@ -342,4 +345,109 @@ Price: {account.product.price} $
 
 """
             bot.edit_message_text(text, message.message.chat.id, message.message.message_id, reply_markup=markup)
+    
+    @bot.callback_query_handler(lambda m: 'yes_buy_' in m.data)
+    def buy_account(message):
+        try:
+            user = User.objects.get(tg_id=message.message.chat.id)
+        except:
+            start(message)
+            return
+        account = Account.objects.get(id=message.data.replace('yes_buy_', ''))
+        account_data = account.file.read().decode("utf-8").replace('\n', '').split(' : ')
+        markup = types.InlineKeyboardMarkup()
+        if user.money < account.product.price:
+            if user.selected_language == 'ru':
+                markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+                bot.edit_message_text('У тебя недостаточно денег для покупки этого аккаунта! Пополни счёт и повтори попытку!', message.message.chat.id, message.message.message_id, reply_markup=markup)
+            else:
+                markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
+                bot.edit_message_text("You don't have enough money to purchase this account! Top up your account and try again!", message.message.chat.id, message.message.message_id, reply_markup=markup)
+            return   
+        settings = Setting.objects.all()[0]
+        order = Order.objects.create(
+            user=user,
+            account=account
+        )
+        user.money -= account.product.price
+        user.save()
+        account.is_enabled = False
+        account.save()
+        if user.selected_language == 'ru':
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('❗️Аккаунт не валиден', callback_data=f'not_valid_{order.id}'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+            text = f'''
+Поздравляю с покупкой!
+Логин: {account_data[0]}
+Пароль: {account_data[1]}
+'''
+            if len(account_data) > 2:
+                text += f'Другие данные для подтверждения аккаунта: {" | ".join(account_data[2:])}'
+            text += f'\nУ тебя есть ровно {settings.time_to_check} минут, чтобы проверить работоспособность аккаунта. Если не получается зайти в купленный аккаунт, то нажми кнопку ниже'
+            bot.edit_message_text(text, message.message.chat.id, message.message.message_id, reply_markup=markup)
+        else:
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('❗️Account is not valid', callback_data=f'not_valid_{order.id}'))
+            markup.row()
+            markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
+            text = f'''
+Congratulations on your purchase!
+Login: {account_data[0]}
+Password: {account_data[1]}
+'''
+            if len(account_data) > 2:
+                text += f'Other information to confirm your account: {" | ".join(account_data[2:])}'
+            text += f'\nYou have exactly {settings.time_to_check} minutes to check the functionality of your account. If you can’t log into your purchased account, click the button below!'
+            bot.edit_message_text(text, message.message.chat.id, message.message.message_id, reply_markup=markup)
+    
+    @bot.callback_query_handler(lambda m: 'not_valid_' in m.data)
+    def not_valid(message):
+        try:
+            user = User.objects.get(tg_id=message.message.chat.id)
+        except:
+            start(message)
+            return
+        order = Order.objects.get(id=message.data.replace('not_valid_', ''))
+        settings = Setting.objects.all()[0]
+        if order.buy_time + datetime.timedelta(minutes=settings.time_to_check) >= timezone.now():
+            bot.send_message(ADMIN_TG_ID, f'Пользователь {user} сказал, что аккаунт {order.account} не валиден! Проверьте!')
+            order.status = 'admin_in_checking'
+            order.save()
+            if user.selected_language == 'ru':
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+                bot.edit_message_text('Заявка отправлена модераторам!', message.message.chat.id, message.message.message_id, reply_markup=markup)
+            else:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
+                bot.edit_message_text('The application has been sent to moderators!', message.message.chat.id, message.message.message_id, reply_markup=markup)
+            bot.answer_callback_query(callback_query_id=message.id, text='OK')
+        else:
+            if user.selected_language == 'ru':
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+                bot.edit_message_text('К сожалению, время на проверку аккаунта истекло! Ты не можешь отправить заявку! Извини.', message.message.chat.id, message.message.message_id, reply_markup=markup)
+            else:
+                markup = types.InlineKeyboardMarkup()
+                markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
+                bot.edit_message_text("Unfortunately, the time to verify your account has expired! You can't submit your application! Sorry.", message.message.chat.id, message.message.message_id, reply_markup=markup)
+            bot.answer_callback_query(callback_query_id=message.id)
+    
+    @bot.callback_query_handler(lambda m: 'no_send_to_all_' in m.data)
+    def not_buy(message):
+        try:
+            user = User.objects.get(tg_id=message.message.chat.id)
+        except:
+            start(message)
+            return
+        if user.selected_language == 'ru':
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('🚫 Закрыть', callback_data='close'))
+            bot.edit_message_text("Покупка отменена!", message.message.chat.id, message.message.message_id, reply_markup=markup)
+        else:
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton('🚫 Сlose', callback_data='close'))
+            bot.edit_message_text("Purchase cancelled!", message.message.chat.id, message.message.message_id, reply_markup=markup)
     bot.infinity_polling(skip_pending = True)

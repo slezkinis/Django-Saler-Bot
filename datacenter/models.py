@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Category(models.Model):
@@ -22,7 +23,7 @@ class Product(models.Model):
     source = models.ForeignKey(Source, models.CASCADE, related_name='products', verbose_name='Источник', null=True)
     description_ru = models.TextField('Описание на русском')
     description_en = models.TextField('Описание на английском')
-    price = models.FloatField('Цена в $')
+    price = models.DecimalField(verbose_name='Цена в $', max_digits=5, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='К какой категории привязан')
 
     def __str__(self) -> str:
@@ -65,6 +66,11 @@ class Order(models.Model):
     user = models.ForeignKey(User, models.CASCADE, related_name='orders', verbose_name='Пользователь')
     account = models.ForeignKey(Account, on_delete=models.SET_NULL, related_name='orders', null=True, verbose_name='Продаваемый аккаунт')
     status = models.CharField('Статус', choices=STATUS, default='user_in_checking', max_length=100)
+    buy_time = models.DateTimeField(
+        'Время покупки',
+        default=timezone.now,
+        db_index=True
+    )
 
     def __str__(self) -> str:
         return f'{self.user}_{self.account.file.name}_{self.status}'

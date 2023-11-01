@@ -31,7 +31,8 @@ CRYPTOMUS_API_KEY = os.getenv('CRYPTOMUS_API_KEY')
 CRYPTOMUS_MERCHANT_ID = os.getenv('CRYPTOMUS_MERCHANT_ID')
 ADMIN_TG_ID = os.getenv('ADMIN_TG_ID')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['4d43-2a00-1370-8178-7795-592d-960f-f9aa-a96e.ngrok-free.app', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://4d43-2a00-1370-8178-7795-592d-960f-f9aa-a96e.ngrok-free.app/']
 
 
 # Application definition

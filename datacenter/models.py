@@ -57,8 +57,7 @@ class Account(models.Model):
 
 class Order(models.Model):
     STATUS = (
-        ('user_in_checking', 'Пользователь проверяет'),
-        ('ok', 'Аккаунт валиден'),
+        ('user_in_checking', 'Пользователь проверяет/OK'),
         ('not_ok', 'Аккаунт невалиден'),
         ('admin_in_checking', 'Админ проверяет на валидность'),
         ('canceled', 'Заявка отклонена')

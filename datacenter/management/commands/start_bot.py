@@ -104,10 +104,14 @@ def start_bot():
         if user.selected_language == 'ru':
             select_ru = types.InlineKeyboardButton('✅ Да', callback_data='change_language_en')
             markup.add(select_ru)
+            markup.row()
+            markup.add(types.InlineKeyboardButton('❌ Нет', callback_data='cancel_add_balance'))
             bot.send_message(message.chat.id, 'Сейчас у тебя установлен русский язык. Ты уверен, что хочешь поменять его на английский?', reply_markup=markup)
         else:
             select_ru = types.InlineKeyboardButton('✅ Yes', callback_data='change_language_ru')
             markup.add(select_ru)
+            markup.row()
+            markup.add(types.InlineKeyboardButton('❌ No', callback_data='cancel_add_balance'))
             bot.send_message(message.chat.id, 'Your language is now set to English. Are you sure you want to change it to Russian?', reply_markup=markup)
 
 
@@ -588,6 +592,7 @@ Password: {account_data[1]}
             markup = types.InlineKeyboardMarkup()
             markup.add(types.InlineKeyboardButton('🚫 Close', callback_data='close'))
             bot.edit_message_text('Operation canceled', message.message.chat.id, message.message.message_id, reply_markup=markup)
+
 
     def make_request(url, invoice_data):
         encoded_data = base64.b64encode(

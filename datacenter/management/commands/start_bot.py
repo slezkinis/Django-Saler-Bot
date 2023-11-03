@@ -236,15 +236,17 @@ def start_bot():
             markup = types.ReplyKeyboardMarkup(True)
             products = types.KeyboardButton('🛒 Каталог')
             change_language_button = types.KeyboardButton('🔁 Изменить язык')
+            help = types.KeyboardButton('❓ Помощь')
             profile = types.KeyboardButton('📱 Профиль')
-            markup.add(products, change_language_button, profile)
+            markup.add(products, change_language_button, help, profile)
             bot.send_message(message.message.chat.id, f'Ты выбрал русский язык как основной! Если вдруг захочешь изменить язык, то нажми кнопку в меню!', reply_markup=markup)
         else:
             markup = types.ReplyKeyboardMarkup(True)
             products = types.KeyboardButton('🛒 Catalog')
             change_language_button = types.KeyboardButton('🔁 Change the language')
+            help = types.KeyboardButton('❓ Help')
             profile = types.KeyboardButton('📱 Profile')
-            markup.add(products, change_language_button, profile)
+            markup.add(products, change_language_button, help, profile)
             bot.send_message(message.message.chat.id, f'You chose English as your main language! If you suddenly want to change the language, then press the button in the menu!', reply_markup=markup)
     
     

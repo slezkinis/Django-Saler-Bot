@@ -35,7 +35,6 @@ class Command(BaseCommand):
                 data['Кол-во заказов'] = orders.count()
                 price = 0
                 for order in orders:
-                    print(order.account.product.price)
                     price += order.account.product.price
                 data['Общая сумма в $'] = price
                 writer.writerow(data)

@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 
+import os
+
 from project.settings import TG_TOKEN, ADMIN_TG_ID, CRYPTOMUS_API_KEY, CRYPTOMUS_MERCHANT_ID
 from datacenter.models import *
 import datetime
@@ -12,6 +14,10 @@ import hashlib
 import json
 import uuid
 import decimal
+
+import csv
+
+from django.core.files.base import ContentFile
 
 
 who_add_balance = set()
@@ -37,7 +43,86 @@ def start_bot():
         bot.delete_message(message.message.chat.id, message.message.message_id)
         bot.answer_callback_query(message.id)
 
+    @bot.message_handler(commands=['send'], func=lambda m: int(m.chat.id) == int(ADMIN_TG_ID))
+    def send(message):
+        try:
+            _, user_id, text = message.text.split(' ', 2)
+        except ValueError:
+            bot.send_message(message.chat.id, 'Указаны не все аргументы! Пример: /send 1234 Привет!')
+            return
+        try:
+            user = User.objects.get(tg_id=user_id)
+        except User.DoesNotExist:
+            bot.send_message(message.chat.id, 'Пользователь не найден!')
+            return
+        try:
+            bot.send_message(user.tg_id, '❗️ Личное уведомление ❗️')
+            bot.send_message(user.tg_id, text)
+        except:
+            bot.send_message(message.chat.id, f'Не удалось отправить сообщение! Возможно, пользователь заблокировал бота')
+            return
+        bot.send_message(message.chat.id, f'Сообщение отправлено пользователю {user.username}')
 
+
+    @bot.message_handler(commands=['send_all'], func=lambda m: int(m.chat.id) == int(ADMIN_TG_ID))
+    def send_all(message):
+        try:
+            _, text = message.text.split(' ', 1)
+        except ValueError:
+            bot.send_message(message.chat.id, 'Указаны не все аргументы! Пример: /send_all Привет!')
+            return
+        с = 0
+        for user in User.objects.all():
+            try:
+                bot.send_message(user.tg_id, '❗️ Уведомление ❗️')
+                bot.send_message(user.tg_id, text)
+            except:
+                continue
+            с += 1
+        bot.send_message(message.chat.id, f'Сообщение отправлено {с} шт пользователям')
+
+    @bot.message_handler(commands=['stat'], func=lambda m: int(m.chat.id) == int(ADMIN_TG_ID))
+    def get_stat(message):
+        with open('statistics.csv', 'w', newline='') as csvfile:
+            fieldnames = ['Источник', 'Кол-во заказов', 'Общая сумма в $']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for source in Source.objects.all():
+                data = dict()
+                orders = Order.objects.filter(account__product__source=source)
+                data['Источник'] = source.name
+                data['Кол-во заказов'] = orders.count()
+                price = 0
+                for order in orders:
+                    price += order.account.product.price
+                data['Общая сумма в $'] = price
+                writer.writerow(data)
+        bot.send_document(message.chat.id, open('statistics.csv', 'rb'), caption='Статистика по источникам выгружена!')
+        os.remove('statistics.csv')
+    
+    @bot.message_handler(content_types=['document'], func=lambda m: int(m.chat.id) == int(ADMIN_TG_ID) and not (m.caption is None or '/upload_accounts' not in m.caption))
+    def upload_accounts(message):
+        try:
+            _, product_id = message.caption.split(' ', 1)
+        except ValueError:
+            bot.send_message(message.chat.id, 'Указаны не все аргументы! Пример: /upload_accounts 1')
+            return
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            bot.send_message(message.chat.id, f'Товар с ID {product_id} не найден!')
+            return
+        file_info = bot.get_file(message.document.file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        accounts = downloaded_file.decode('UTF-8').split('\n')
+        for account_data in accounts:
+            account_data = account_data.replace('\n', '').split()
+            file = ContentFile(''.join(account_data))
+            account = Account.objects.create(
+                product=product
+            )
+            account.file.save(f'account_{account.id}_{account_data[0]}.txt', content=file, save=True)
+        bot.send_message(message.chat.id, f'Создано {len(accounts)} шт аккаунтов для товара {product.name_ru}')
     @bot.message_handler(commands=['start'])
     def start(message):
         user = User.objects.filter(tg_id=message.chat.id)

@@ -6,11 +6,22 @@ from .models import *
 class CategoryAdmin(admin.ModelAdmin):
     search_fields = ['name_ru', 'name_en']
 
+class ProductInline(admin.TabularInline):
+    model = Account
+    fields = ['file', 'is_enabled']
+    extra = 0
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_filter=['source']
     search_fields = ['name_ru', 'name_en']
+    readonly_fields = ['id']
+
+    inlines = [ProductInline]
+
+    def id(self, obj):
+        return obj.id
 
 
 @admin.register(User)
